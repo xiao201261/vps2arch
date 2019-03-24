@@ -26,6 +26,7 @@ else
 fi
 
 get_worldwide_mirrors() {
+	echo "http://mirrors.kernel.org/archlinux"
 	_download 'https://www.archlinux.org/mirrorlist/?country=all&protocol=http&protocol=https&ip_version=4' | awk '/^## /{if ($2 == "Worldwide") { flag=1 } else { flag=0 } } /^#Server/ { if (flag) { sub(/\/\$repo.*/, ""); print $3 } }'
 }
 
@@ -89,7 +90,6 @@ configure_chroot() {
 		mv "/root.$cpu_type/etc/pacman.conf.bak" "/root.$cpu_type/etc/pacman.conf"
 	fi
 	chroot_exec 'pacman-key --init && pacman-key --populate archlinux'
-	chroot_exec 'pacman --noconfirm -Sy awk'
 	# Generate fstab
 	chroot_exec 'genfstab /mnt >> /etc/fstab'
 
@@ -161,6 +161,9 @@ configure_bootloader() {
 		grep -q '^[[:space:]]*eth' /proc/net/dev && \
 			sed -i.bak 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
 
+		# Disable "graphic" terminal output
+		sed -i.bak 's/^#GRUB_TERMINAL_OUTPUT=console/GRUB_TERMINAL_OUTPUT=console/' /etc/default/grub
+
 		if [ $needs_lvm2 -eq 1 ]; then
 			local vg
 			vg=$(lvs --noheadings $root_dev | awk '{print $2}')
@@ -173,10 +176,11 @@ configure_bootloader() {
 			*)		root_devs="${root_devs:+$root_devs }$tmp"	;;
 			esac
 		done
-		grub-mkconfig > /boot/grub/grub.cfg
+        mkdir /boot/grub
 		for root_dev in $root_devs; do
 			grub-install --target=i386-pc --recheck --force "$root_dev"
 		done
+		grub-mkconfig > /boot/grub/grub.cfg
 	elif [ "$bootloader" = "syslinux" ]; then
 		# If you are still using eth* as interface name, disable "strange" ifnames
 		grep -q '^[[:space:]]*eth' /proc/net/dev && tmp="net.ifnames=0"
