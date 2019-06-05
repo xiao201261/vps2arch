@@ -46,9 +46,9 @@ download() {
 
 download_and_extract_bootstrap() {
 	local sha1 filename
-	download iso/latest/sha1sums.txt | fgrep "$cpu_type.tar.gz" > "sha1sums.txt"
+	download "iso/"$(date +%Y.%m.01)"/sha1sums.txt" | fgrep "$cpu_type.tar.gz" > "sha1sums.txt"
 	read -r sha1 filename < "sha1sums.txt"
-	download "iso/latest/$filename" > "$filename"
+	download "iso/"$(date +%Y.%m.01)"/$filename" > "$filename"
 	sha1sum -c sha1sums.txt || exit 1
 	tar -xpzf "$filename"
 	rm -f "$filename"
